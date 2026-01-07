@@ -44,15 +44,25 @@ def get_day_time(date_str: str) -> str:
         return date_str
 
 
-def format_waktu_with_diff(date_str: str, diff: int, status: str) -> str:
-    """Format waktu dengan icon dan selisih harga"""
+def format_waktu_only(date_str: str, status: str) -> str:
+    """Format waktu dengan icon saja (tanpa selisih harga)"""
     day_time = get_day_time(date_str)
+    return f"{day_time}{status}"
+
+
+def format_diff_display(diff: int, status: str) -> str:
+    """Format selisih harga dengan icon untuk kolom Data Transaksi"""
     if status == "🚀":
-        return f"{day_time}🚀+{format_rupiah(diff)}"
+        return f"🚀+{format_rupiah(diff)}"
     elif status == "🔻":
-        return f"{day_time}🔻-{format_rupiah(abs(diff))}"
+        return f"🔻-{format_rupiah(abs(diff))}"
     else:
-        return f"{day_time}➖tetap"
+        return "➖tetap"
+
+
+def format_transaction_display(buy: str, sell: str, diff_display: str) -> str:
+    """Format data transaksi untuk tampilan yang lebih rapi"""
+    return f"Beli: {buy}<br>Jual: {sell}<br>{diff_display}"
 
 
 def calc_profit(h: dict, modal: int, pokok: int) -> str:
@@ -71,7 +81,13 @@ def build_history_data() -> List[dict]:
     return [{
         "buying_rate": format_rupiah(h["buying_rate"]),
         "selling_rate": format_rupiah(h["selling_rate"]),
-        "waktu_display": format_waktu_with_diff(h["created_at"], h.get("diff", 0), h["status"]),
+        "waktu_display": format_waktu_only(h["created_at"], h["status"]),
+        "diff_display": format_diff_display(h.get("diff", 0), h["status"]),
+        "transaction_display": format_transaction_display(
+            format_rupiah(h["buying_rate"]),
+            format_rupiah(h["selling_rate"]),
+            format_diff_display(h.get("diff", 0), h["status"])
+        ),
         "created_at": h["created_at"],
         "jt20": calc_profit(h, 20000000, 19315000),
         "jt30": calc_profit(h, 30000000, 28980000)
@@ -293,6 +309,11 @@ th.profit,td.profit{width:154px;min-width:80px;max-width:160px;text-align:left}
 .tradingview-section{margin-top:0px;clear:both}
 .tradingview-wrapper{height:400px;overflow:hidden;border:1px solid #ccc;border-radius:6px}
 .tradingview-wrapper iframe{width:100%;height:100%;border:0}
+/* Styling khusus untuk tampilan rapi di HP */
+#tabel tbody td.transaksi{line-height:1.3;padding:6px 8px}
+#tabel tbody td.transaksi .harga-beli{display:block;margin-bottom:2px}
+#tabel tbody td.transaksi .harga-jual{display:block;margin-bottom:2px}
+#tabel tbody td.transaksi .selisih{display:block;font-weight:bold}
 @media(max-width:768px){
 body{padding:12px;padding-bottom:50px}
 h2{font-size:1.1em}
@@ -320,6 +341,15 @@ table.dataTable tbody td{padding:6px}
 .dataTables_wrapper .dataTables_filter input{width:100px!important;font-size:12px!important;padding:4px 6px!important}
 .dataTables_wrapper .dataTables_length select{font-size:12px!important;padding:3px!important}
 .dataTables_wrapper .dataTables_paginate .paginate_button{padding:4px 10px!important;font-size:12px!important;min-width:auto!important}
+/* Tampilan HP lebih rapi */
+#tabel{min-width:580px!important}
+#tabel tbody td{font-size:12px!important;padding:5px 4px!important}
+#tabel tbody td.waktu{width:85px!important;min-width:85px!important;max-width:85px!important}
+#tabel tbody td.transaksi{width:140px!important;min-width:140px!important;max-width:140px!important}
+#tabel tbody td.profit{width:120px!important;min-width:120px!important;max-width:120px!important}
+#tabel tbody td.transaksi .harga-beli,
+#tabel tbody td.transaksi .harga-jual,
+#tabel tbody td.transaksi .selisih{font-size:11px!important;margin-bottom:1px!important}
 }
 @media(max-width:480px){
 body{padding:10px;padding-bottom:45px}
@@ -330,6 +360,7 @@ h3{font-size:0.95em;margin:12px 0 8px}
 table.dataTable{font-size:12px;min-width:560px}
 table.dataTable thead th{padding:6px 4px}
 table.dataTable tbody td{padding:5px 4px}
+th.waktu, td.waktu { width: 60px; min-width: 50px; max-width: 70px; }
 .theme-toggle-btn{width:36px;height:36px;font-size:1.2em}
 .container-flex{gap:12px}
 .card{padding:8px}
@@ -349,6 +380,15 @@ table.dataTable tbody td{padding:5px 4px}
 .dataTables_wrapper .dataTables_length select{font-size:11px!important}
 .dataTables_wrapper .dataTables_paginate .paginate_button{padding:3px 8px!important;font-size:11px!important}
 #priceList{max-height:200px}
+/* Tampilan HP lebih rapi */
+#tabel{min-width:540px!important}
+#tabel tbody td{font-size:11px!important;padding:4px 3px!important}
+#tabel tbody td.waktu{width:80px!important;min-width:80px!important;max-width:80px!important}
+#tabel tbody td.transaksi{width:130px!important;min-width:130px!important;max-width:130px!important}
+#tabel tbody td.profit{width:110px!important;min-width:110px!important;max-width:110px!important}
+#tabel tbody td.transaksi .harga-beli,
+#tabel tbody td.transaksi .harga-jual,
+#tabel tbody td.transaksi .selisih{font-size:10px!important;margin-bottom:0!important}
 }
 </style>
 </head>
@@ -406,8 +446,8 @@ table.dataTable tbody td{padding:5px 4px}
 var isDark=localStorage.getItem('theme')==='dark';
 function createTradingViewWidget(){var wrapper=document.getElementById('tradingview_chart');var h=wrapper.offsetHeight||400;new TradingView.widget({width:"100%",height:h,symbol:"OANDA:XAUUSD",interval:"15",timezone:"Asia/Jakarta",theme:isDark?'dark':'light',style:"1",locale:"id",toolbar_bg:"#f1f3f6",enable_publishing:false,hide_top_toolbar:false,save_image:false,container_id:"tradingview_chart"})}
 createTradingViewWidget();
-var table=$('#tabel').DataTable({pageLength:4,lengthMenu:[4,8,18,48,88,888,1441],order:[],dom:'<"dt-top-controls"lf>t<"bottom"p><"clear">',columns:[{data:"waktu"},{data:"all"},{data:"jt20"},{data:"jt30"}],language:{emptyTable:"Menunggu data harga emas dari Treasury...",zeroRecords:"Tidak ada data yang cocok",lengthMenu:"Show _MENU_",search:"Search:"}});
-function updateTable(h){if(!h||!h.length)return;h.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)});var arr=h.map(function(d){return{waktu:d.waktu_display,all:"Harga Beli: "+d.buying_rate+" Jual: "+d.selling_rate,jt20:d.jt20,jt30:d.jt30}});table.clear().rows.add(arr).draw(false);table.page('first').draw(false)}
+var table=$('#tabel').DataTable({pageLength:4,lengthMenu:[4,8,18,48,88,888,1441],order:[],dom:'<"dt-top-controls"lf>t<"bottom"p><"clear">',columns:[{data:"waktu"},{data:"transaction"},{data:"jt20"},{data:"jt30"}],language:{emptyTable:"Menunggu data harga emas dari Treasury...",zeroRecords:"Tidak ada data yang cocok",lengthMenu:"Show _MENU_",search:"Search:"}});
+function updateTable(h){if(!h||!h.length)return;h.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)});var arr=h.map(function(d){return{waktu:d.waktu_display,transaction:'<div class="transaksi"><span class="harga-beli">Harga Beli: '+d.buying_rate+'</span><span class="harga-jual"> Jual: '+d.selling_rate+'</span><span class="selisih">'+d.diff_display+'   </span></div>',jt20:d.jt20,jt30:d.jt30}});table.clear().rows.add(arr).draw(false);table.page('first').draw(false)}
 function updateUsd(h){var c=document.getElementById("currentPrice"),p=document.getElementById("priceList");if(!h||!h.length){c.textContent="Menunggu data...";c.className="loading-text";p.innerHTML='<li class="loading-text">Menunggu data...</li>';return}c.className="";function prs(s){return parseFloat(s.trim().replace(/\./g,'').replace(',','.'))}var r=h.slice().reverse();var icon="➖";if(r.length>1){var n=prs(r[0].price),pr=prs(r[1].price);icon=n>pr?"🚀":n<pr?"🔻":"➖"}c.innerHTML=r[0].price+" "+icon;p.innerHTML="";for(var i=0;i<r.length;i++){var ic="➖";if(i===0&&r.length>1){var n=prs(r[0].price),pr=prs(r[1].price);ic=n>pr?"🟢":n<pr?"🔴":"➖"}else if(i<r.length-1){var n=prs(r[i].price),nx=prs(r[i+1].price);ic=n>nx?"🟢":n<nx?"🔴":"➖"}else if(r.length>1){var n=prs(r[i].price),pr=prs(r[i-1].price);ic=n<pr?"🔴":n>pr?"🟢":"➖"}var li=document.createElement("li");li.innerHTML=r[i].price+' <span class="time">('+r[i].time+')</span> '+ic;p.appendChild(li)}}
 function updateInfo(i){document.getElementById("isiTreasury").innerHTML=i||"Belum ada info treasury."}
 var ws,ra=0;function conn(){var pr=location.protocol==="https:"?"wss:":"ws:";ws=new WebSocket(pr+"//"+location.host+"/ws");ws.onopen=function(){ra=0};ws.onmessage=function(e){try{var d=JSON.parse(e.data);if(d.ping)return;if(d.history)updateTable(d.history);if(d.usd_idr_history)updateUsd(d.usd_idr_history);if(d.treasury_info!==undefined)updateInfo(d.treasury_info)}catch(x){}};ws.onclose=function(){ra++;setTimeout(conn,Math.min(1000*Math.pow(1.5,ra-1),30000))};ws.onerror=function(){}}conn();
